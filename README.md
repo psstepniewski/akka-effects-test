@@ -1,0 +1,1 @@
+Simple project to test how akka Effect concept works.
