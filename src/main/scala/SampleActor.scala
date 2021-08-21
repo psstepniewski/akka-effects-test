@@ -1,6 +1,7 @@
 import SampleActor.Commands.TestMe
-import akka.actor.typed.{ActorRef, Behavior}
+import SampleActor.Commands.TestMe.Results.TestSuccess
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, ReplyEffect}
 
@@ -8,14 +9,18 @@ object SampleActor {
 
   private val entityType = "SampleActor"
 
+  object TestCase extends Enumeration {
+    type TestCase = Value
+    val WORKS, FAIL = Value
+  }
+
   sealed trait Command
   object Commands {
-    case class TestMe(isSuccess: Boolean, replyTo: ActorRef[TestMe.Result]) extends Command
+    case class TestMe(testId: TestCase.Value, replyTo: ActorRef[TestMe.Result]) extends Command
     case object TestMe {
       sealed trait Result
       object Results {
         case object TestSuccess extends Result
-        case object TestFail extends Result
       }
     }
   }
@@ -33,8 +38,11 @@ object SampleActor {
     override def snapshot: Snapshot = throw new IllegalStateException(s"EmptyShortLink[$id] has not state snapshot yet.")
 
     override def applyCommand(cmd: Command)(implicit context: ActorContext[Command]): ReplyEffect[Event, State] = cmd match {
-      case c: TestMe =>
-        Effect.reply(c.replyTo)(if (c.isSuccess) TestMe.Results.TestSuccess else TestMe.Results.TestFail)
+      case TestMe(TestCase.WORKS, replyTo) =>
+        Effect.reply(replyTo)(TestSuccess)
+      case TestMe(TestCase.FAIL, replyTo) =>
+        Effect.stop()
+          .thenReply(replyTo)(_ => TestSuccess)
       case c =>
         context.log.warn("{}[id={}, state=Empty] received unknown command[{}].", entityType, id, c)
         Effect.stop()
