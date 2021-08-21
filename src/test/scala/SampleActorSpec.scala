@@ -1,4 +1,5 @@
 import SampleActor.TestCase
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
 import com.typesafe.config.ConfigFactory
@@ -18,12 +19,12 @@ class SampleActorSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
   }
 
   "SampleActor#TestMe" should {
-    "return TestSuccess for test case WORKS" in {
+    "return TestSuccess for test case TEST_CASE_1" in {
       Given("empty SampleActor")
       // do nothing - declared above
 
-      When("TestMe message with testCase=WORKS is send")
-      val result = eventSourcedTestKit.runCommand(ref => SampleActor.Commands.TestMe(TestCase.WORKS, ref))
+      When("TestMe message with testCase=TEST_CASE_1 is send")
+      val result = eventSourcedTestKit.runCommand(ref => SampleActor.Commands.TestMe(TestCase.TEST_CASE_1, ref))
 
       Then("actor replies with TestSuccess")
       result.reply mustBe theSameInstanceAs(SampleActor.Commands.TestMe.Results.TestSuccess)
@@ -31,18 +32,31 @@ class SampleActorSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
 
     /*
     This test fails with stacktrace:
-    - should return TestSuccess for test case FAIL *** FAILED ***
+    - should return TestSuccess for test case TEST_CASE_2 *** FAILED ***
         java.lang.AssertionError: Timeout (3 seconds) during receiveMessage while waiting for message.
     */
-    "return TestSuccess for test case FAIL" in {
-      Given("empty SampleActor")
-      // do nothing - declared above
+//    "return TestSuccess for test case TEST_CASE_2 (this test fails)" in {
+//      Given("empty SampleActor")
+//      // do nothing - declared above
+//
+//      When("TestMe message with testCase=TEST_CASE_2 is send")
+//      val result = eventSourcedTestKit.runCommand(ref => SampleActor.Commands.TestMe(TestCase.TEST_CASE_2, ref))
+//
+//      Then("actor replies with TestSuccess")
+//      result.reply mustBe theSameInstanceAs(SampleActor.Commands.TestMe.Results.TestSuccess)
+//    }
 
-      When("TestMe message with testCase=FAIL is send")
-      val result = eventSourcedTestKit.runCommand(ref => SampleActor.Commands.TestMe(TestCase.FAIL, ref))
+    "return TestSuccess for test case TEST_CASE_2" in {
+      Given("empty SampleActor")
+      val actorTestKit = ActorTestKit(system)
+      val ref = actorTestKit.spawn(SampleActor("testId2"))
+
+      When("TestMe message with testCase=TEST_CASE_2 is send")
+      val probeRef = actorTestKit.createTestProbe[SampleActor.Commands.TestMe.Result]()
+      ref ! SampleActor.Commands.TestMe(TestCase.TEST_CASE_2, probeRef.ref)
 
       Then("actor replies with TestSuccess")
-      result.reply mustBe theSameInstanceAs(SampleActor.Commands.TestMe.Results.TestSuccess)
+      probeRef.expectMessage(SampleActor.Commands.TestMe.Results.TestSuccess)
     }
   }
 }

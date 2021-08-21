@@ -11,7 +11,7 @@ object SampleActor {
 
   object TestCase extends Enumeration {
     type TestCase = Value
-    val WORKS, FAIL = Value
+    val TEST_CASE_1, TEST_CASE_2 = Value
   }
 
   sealed trait Command
@@ -38,9 +38,9 @@ object SampleActor {
     override def snapshot: Snapshot = throw new IllegalStateException(s"EmptyShortLink[$id] has not state snapshot yet.")
 
     override def applyCommand(cmd: Command)(implicit context: ActorContext[Command]): ReplyEffect[Event, State] = cmd match {
-      case TestMe(TestCase.WORKS, replyTo) =>
+      case TestMe(TestCase.TEST_CASE_1, replyTo) =>
         Effect.reply(replyTo)(TestSuccess)
-      case TestMe(TestCase.FAIL, replyTo) =>
+      case TestMe(TestCase.TEST_CASE_2, replyTo) =>
         Effect.stop()
           .thenReply(replyTo)(_ => TestSuccess)
       case c =>
